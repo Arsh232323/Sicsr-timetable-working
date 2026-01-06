@@ -5,15 +5,20 @@ from bs4 import BeautifulSoup
 import datetime
 import os
 import json
+import pytz  # <--- FIX: This handles the Indian Timezone
 
-# 1. Initialize Firebase securely from GitHub Secrets
-# We check if the environment variable exists (for Cloud) or look for local file (for Laptop)
+# 1. Initialize Firebase securely
+# Checks if running on GitHub (Env Var) or Laptop (File)
 if os.environ.get('FIREBASE_SERVICE_ACCOUNT'):
     service_account_info = json.loads(os.environ.get('FIREBASE_SERVICE_ACCOUNT'))
     cred = credentials.Certificate(service_account_info)
 else:
     # Fallback for your laptop testing
-    cred = credentials.Certificate("serviceAccountKey.json")
+    if os.path.exists("serviceAccountKey.json"):
+        cred = credentials.Certificate("serviceAccountKey.json")
+    else:
+        print("⚠️ Error: serviceAccountKey.json not found!")
+        exit(1)
 
 if not firebase_admin._apps:
     firebase_admin.initialize_app(cred)
@@ -27,7 +32,6 @@ def scrape_date(target_date):
     date_str = target_date.strftime('%Y-%m-%d')
     print(f"--- Scraping {date_str} ---")
     
-    # URL parameters
     params = {
         'year': target_date.year,
         'month': target_date.month,
@@ -39,7 +43,6 @@ def scrape_date(target_date):
         response = requests.get(f"{BASE_URL}/day.php", params=params)
         soup = BeautifulSoup(response.text, 'html.parser')
         
-        # Find all class IDs for this day
         links = soup.find_all('a', href=True)
         unique_ids = set()
         for link in links:
@@ -49,7 +52,6 @@ def scrape_date(target_date):
         
         print(f"Found {len(unique_ids)} classes.")
 
-        # Scrape each class
         for class_id in unique_ids:
             details_url = f"{BASE_URL}/view_entry.php?id={class_id}"
             details_resp = requests.get(details_url)
@@ -61,7 +63,6 @@ def scrape_date(target_date):
 
             batch = get_val("Type:")
             if batch:
-                # Save to Firestore
                 data = {
                     "id": class_id,
                     "date": date_str,
@@ -71,9 +72,10 @@ def scrape_date(target_date):
                     "start_time": get_val("Start time:")[:5],
                     "end_time": get_val("End time:")[:5]
                 }
+                # Upload to Firebase
                 db.collection("timetables").document(class_id).set(data, merge=True)
                 
-                # Update meta lists (simplified for brevity)
+                # Update Course List
                 db.collection("meta").document("courses").set({
                     "list": firestore.ArrayUnion([batch])
                 }, merge=True)
@@ -81,9 +83,18 @@ def scrape_date(target_date):
     except Exception as e:
         print(f"Error scraping {date_str}: {e}")
 
-# 3. Main Loop: Run for Today + Next 6 Days (1 Week)
+# 3. Main Loop: FORCE INDIAN TIME (IST)
 if __name__ == "__main__":
-    start_date = datetime.date.today()
+    # Define Indian Timezone
+    ist = pytz.timezone('Asia/Kolkata')
+    
+    # Get "Today" in India, even if server is in London
+    start_date = datetime.datetime.now(ist).date()
+    
+    print(f"Server Date (UTC): {datetime.date.today()}") 
+    print(f"India Date (IST):  {start_date}")          
+
+    # Scrape Today + Next 6 Days
     for i in range(7):
         current_day = start_date + datetime.timedelta(days=i)
         scrape_date(current_day)
