@@ -5,15 +5,13 @@ from bs4 import BeautifulSoup
 import datetime
 import os
 import json
-import pytz  # <--- FIX: This handles the Indian Timezone
+import pytz
 
 # 1. Initialize Firebase securely
-# Checks if running on GitHub (Env Var) or Laptop (File)
 if os.environ.get('FIREBASE_SERVICE_ACCOUNT'):
     service_account_info = json.loads(os.environ.get('FIREBASE_SERVICE_ACCOUNT'))
     cred = credentials.Certificate(service_account_info)
 else:
-    # Fallback for your laptop testing
     if os.path.exists("serviceAccountKey.json"):
         cred = credentials.Certificate("serviceAccountKey.json")
     else:
@@ -25,12 +23,15 @@ if not firebase_admin._apps:
 
 db = firestore.client()
 
-# 2. Configuration
 BASE_URL = "http://time-table.sicsr.ac.in"
 
 def scrape_date(target_date):
     date_str = target_date.strftime('%Y-%m-%d')
     print(f"--- Scraping {date_str} ---")
+    
+    # STEP 1: Get all existing Class IDs for this date from Firebase
+    existing_docs = db.collection("timetables").where("date", "==", date_str).stream()
+    existing_ids = set(doc.id for doc in existing_docs)
     
     params = {
         'year': target_date.year,
@@ -44,15 +45,18 @@ def scrape_date(target_date):
         soup = BeautifulSoup(response.text, 'html.parser')
         
         links = soup.find_all('a', href=True)
-        unique_ids = set()
+        found_ids = set()
+        
+        # STEP 2: Find all classes currently on the website
         for link in links:
             if 'view_entry.php?id=' in link['href']:
                 class_id = link['href'].split('id=')[1]
-                unique_ids.add(class_id)
+                found_ids.add(class_id)
         
-        print(f"Found {len(unique_ids)} classes.")
+        print(f"Website shows {len(found_ids)} classes. Firebase has {len(existing_ids)}.")
 
-        for class_id in unique_ids:
+        # STEP 3: Upload/Update the classes found
+        for class_id in found_ids:
             details_url = f"{BASE_URL}/view_entry.php?id={class_id}"
             details_resp = requests.get(details_url)
             details_soup = BeautifulSoup(details_resp.text, 'html.parser')
@@ -72,29 +76,31 @@ def scrape_date(target_date):
                     "start_time": get_val("Start time:")[:5],
                     "end_time": get_val("End time:")[:5]
                 }
-                # Upload to Firebase
                 db.collection("timetables").document(class_id).set(data, merge=True)
                 
-                # Update Course List
                 db.collection("meta").document("courses").set({
                     "list": firestore.ArrayUnion([batch])
                 }, merge=True)
 
+        # STEP 4: The Cleanup (Delete classes that are gone)
+        ids_to_delete = existing_ids - found_ids
+        if ids_to_delete:
+            print(f"🗑️ Deleting {len(ids_to_delete)} old/cancelled classes...")
+            for old_id in ids_to_delete:
+                db.collection("timetables").document(old_id).delete()
+        else:
+            print("No classes to delete.")
+
     except Exception as e:
         print(f"Error scraping {date_str}: {e}")
 
-# 3. Main Loop: FORCE INDIAN TIME (IST)
 if __name__ == "__main__":
-    # Define Indian Timezone
     ist = pytz.timezone('Asia/Kolkata')
-    
-    # Get "Today" in India, even if server is in London
     start_date = datetime.datetime.now(ist).date()
     
     print(f"Server Date (UTC): {datetime.date.today()}") 
     print(f"India Date (IST):  {start_date}")          
 
-    # Scrape Today + Next 6 Days
     for i in range(7):
         current_day = start_date + datetime.timedelta(days=i)
         scrape_date(current_day)
