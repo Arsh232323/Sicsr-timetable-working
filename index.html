@@ -1,0 +1,83 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
+    <title>SICSR Timetable</title>
+    
+    <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗓️</text></svg>">
+
+    <link rel="stylesheet" href="style.css">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+</head>
+<body>
+
+    <div class="app-container">
+        <header>
+            <div class="header-inner">
+                <button id="viewModeBtn" class="header-mode-btn">Click here for Teachers Schedule 👨‍🏫</button>
+                
+                <div class="logo-area">
+                    <h1>SICSR <span class="highlight">Timetable</span></h1>
+                </div>
+                
+                <button id="themeToggleBtn" class="header-icon-btn" title="Toggle Dark Mode">🌙</button>
+            </div>
+        </header>
+
+        <div class="controls-card">
+            <div class="top-row">
+                <div class="menu-wrapper">
+                    <div id="menuTrigger" class="menu-btn">
+                        <span id="menuLabel">Select Course...</span>
+                        <span class="chevron">▼</span>
+                    </div>
+
+                    <div id="dropdownList" class="dropdown-list">
+                        <div id="searchContainer" class="search-wrap hidden">
+                            <input type="text" id="teacherSearch" placeholder="🔍 Search teacher...">
+                        </div>
+
+                        <div id="menuHeader" class="menu-header hidden">
+                            <button id="backBtn" class="nav-btn">←</button>
+                            <span id="stepTitle">Select</span>
+                        </div>
+                        
+                        <div id="menuOptions" class="options-list">
+                            <div class="spinner">Loading...</div>
+                        </div>
+                    </div>
+                </div>
+
+                <button id="setDefaultBtn" class="pin-btn" title="Pin this class as Default">📌</button>
+
+                <div class="date-controls">
+                    <button id="prevDayBtn" class="icon-btn" title="Previous Day">‹</button>
+                    <span id="dayIndicator" class="day-label">--</span>
+                    <input type="date" id="datePicker">
+                    <button id="nextDayBtn" class="icon-btn" title="Next Day">›</button>
+                </div>
+            </div>
+
+            <div id="divisionWrapper" class="division-wrapper hidden">
+                <button id="scrollLeftBtn" class="scroll-btn">‹</button>
+                <div id="divisionBar" class="division-bar"></div>
+                <button id="scrollRightBtn" class="scroll-btn">›</button>
+            </div>
+
+            <button id="todayBtn" class="header-today-btn">Go to Today</button>
+        </div>
+
+        <div id="timetable" class="timetable-list">
+            <div class="empty-state">
+                <div class="icon">👆</div>
+                <p>Select a course to start</p>
+            </div>
+        </div>
+    </div>
+
+    <div id="toastBox" class="toast-box"></div>
+
+    <script type="module" src="script.js"></script>
+</body>
+</html>
