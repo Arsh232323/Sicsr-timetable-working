@@ -27,12 +27,30 @@ BASE_URL = "http://time-table.sicsr.ac.in"
 
 def scrape_date(target_date):
     date_str = target_date.strftime('%Y-%m-%d')
-    print(f"--- Scraping {date_str} ---")
+    print(f"--- Processing {date_str} ---")
     
-    # STEP 1: Get all existing Class IDs for this date from Firebase
-    existing_docs = db.collection("timetables").where("date", "==", date_str).stream()
-    existing_ids = set(doc.id for doc in existing_docs)
-    
+    # STEP 1: WIPE (Delete all old entries for this specific date)
+    # We do this first so we start with a clean slate. No duplicates possible.
+    try:
+        old_docs = db.collection("timetables").where("date", "==", date_str).stream()
+        deleted_count = 0
+        batch = db.batch() # Use batch for faster deleting
+        
+        for doc in old_docs:
+            batch.delete(doc.reference)
+            deleted_count += 1
+            # Firestore batches can only hold 500 ops, commit if we hit limit (rare for daily classes)
+            if deleted_count % 400 == 0:
+                batch.commit()
+                batch = db.batch()
+        
+        batch.commit() # Commit any remaining deletes
+        print(f"🗑️ Wiped {deleted_count} old entries for {date_str}.")
+        
+    except Exception as e:
+        print(f"⚠️ Error deleting old data: {e}")
+
+    # STEP 2: WRITE (Scrape and add new entries)
     params = {
         'year': target_date.year,
         'month': target_date.month,
@@ -45,18 +63,17 @@ def scrape_date(target_date):
         soup = BeautifulSoup(response.text, 'html.parser')
         
         links = soup.find_all('a', href=True)
-        found_ids = set()
+        unique_ids = set()
         
-        # STEP 2: Find all classes currently on the website
         for link in links:
             if 'view_entry.php?id=' in link['href']:
                 class_id = link['href'].split('id=')[1]
-                found_ids.add(class_id)
+                unique_ids.add(class_id)
         
-        print(f"Website shows {len(found_ids)} classes. Firebase has {len(existing_ids)}.")
+        print(f"Found {len(unique_ids)} new classes for {date_str}.")
 
-        # STEP 3: Upload/Update the classes found
-        for class_id in found_ids:
+        # Upload new classes
+        for class_id in unique_ids:
             details_url = f"{BASE_URL}/view_entry.php?id={class_id}"
             details_resp = requests.get(details_url)
             details_soup = BeautifulSoup(details_resp.text, 'html.parser')
@@ -65,43 +82,38 @@ def scrape_date(target_date):
                 tag = details_soup.find('td', string=label)
                 return tag.find_next_sibling('td').text.strip() if tag else ""
 
-            batch = get_val("Type:")
-            if batch:
+            batch_name = get_val("Type:")
+            if batch_name:
                 data = {
                     "id": class_id,
-                    "date": date_str,
-                    "batch": batch,
+                    "date": date_str, # Start date
+                    "batch": batch_name,
                     "description": get_val("Description:"),
                     "room": get_val("Room:"),
                     "start_time": get_val("Start time:")[:5],
                     "end_time": get_val("End time:")[:5]
                 }
-                db.collection("timetables").document(class_id).set(data, merge=True)
                 
+                # Save to Firestore
+                db.collection("timetables").document(class_id).set(data)
+                
+                # Update Course List (Meta)
                 db.collection("meta").document("courses").set({
-                    "list": firestore.ArrayUnion([batch])
+                    "list": firestore.ArrayUnion([batch_name])
                 }, merge=True)
-
-        # STEP 4: The Cleanup (Delete classes that are gone)
-        ids_to_delete = existing_ids - found_ids
-        if ids_to_delete:
-            print(f"🗑️ Deleting {len(ids_to_delete)} old/cancelled classes...")
-            for old_id in ids_to_delete:
-                db.collection("timetables").document(old_id).delete()
-        else:
-            print("No classes to delete.")
-
+                
     except Exception as e:
-        print(f"Error scraping {date_str}: {e}")
+        print(f"❌ Error scraping {date_str}: {e}")
 
+# 3. Main Loop (Indian Time)
 if __name__ == "__main__":
     ist = pytz.timezone('Asia/Kolkata')
     start_date = datetime.datetime.now(ist).date()
     
-    print(f"Server Date (UTC): {datetime.date.today()}") 
-    print(f"India Date (IST):  {start_date}")          
+    print(f"Starting Weekly Update...")
+    print(f"India Date: {start_date}")
 
     for i in range(7):
         current_day = start_date + datetime.timedelta(days=i)
         scrape_date(current_day)
-    print("✅ Weekly scrape complete.")
+    print("✅ Update Complete.")
