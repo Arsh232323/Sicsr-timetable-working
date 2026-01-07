@@ -2,14 +2,14 @@ name: Daily Timetable Scraper
 
 on:
   schedule:
-    # 19:30 UTC = 1:00 AM IST (Next Day)
+    # 19:30 UTC = 1:00 AM IST
     - cron: '30 19 * * *'
-  workflow_dispatch: # Allows manual run
+  workflow_dispatch: # Manual button
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 15  # <--- CHANGED TO 15 MINUTES
+    timeout-minutes: 15
     steps:
       - name: Checkout code
         uses: actions/checkout@v3

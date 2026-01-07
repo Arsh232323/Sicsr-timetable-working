@@ -219,8 +219,8 @@ def scrape_day(target_date):
 # --- MAIN EXECUTION ---
 if __name__ == "__main__":
     # Define Date Range for Scraping
-    start_date = datetime.date(2026, 1, 4)  
-    end_date = datetime.date(2026, 5, 1)    
+    start_date = datetime.date(2026, 1, 7)  
+    end_date = datetime.date(2026, 1, 14)    
     
     current_date = start_date
     while current_date <= end_date:
