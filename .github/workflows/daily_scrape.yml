@@ -4,12 +4,12 @@ on:
   schedule:
     # 19:30 UTC = 1:00 AM IST (Next Day)
     - cron: '30 19 * * *'
-  workflow_dispatch: # Keeps the manual button (useful for testing)
+  workflow_dispatch: # Allows manual run
 
 jobs:
   scrape:
     runs-on: ubuntu-latest
-    timeout-minutes: 5 # Safety limit so you don't burn free minutes
+    timeout-minutes: 15  # <--- CHANGED TO 15 MINUTES
     steps:
       - name: Checkout code
         uses: actions/checkout@v3
