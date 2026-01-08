@@ -24,11 +24,12 @@
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 8px;
+            gap: 10px;
             box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+            line-height: 1.4; /* Improves readability for long text */
         }
         
-        /* Dark mode support for the banner */
+        /* Dark mode support */
         body.dark-mode .status-banner {
             background-color: #450a0a;
             color: #fca5a5;
@@ -37,8 +38,8 @@
 
         @media (min-width: 768px) {
             .status-banner {
-                max-width: 600px;
-                margin: 16px auto 0 auto; /* Center on desktop */
+                max-width: 700px; /* Made slightly wider to fit the longer text */
+                margin: 16px auto 0 auto;
                 font-size: 15px;
             }
         }
@@ -60,8 +61,8 @@
         </header>
 
         <div class="status-banner">
-            <svg xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
-            <span>Down right now, will start working again at 2pm</span>
+            <svg style="flex-shrink: 0;" xmlns="http://www.w3.org/2000/svg" width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><circle cx="12" cy="12" r="10"></circle><line x1="12" y1="8" x2="12" y2="12"></line><line x1="12" y1="16" x2="12.01" y2="16"></line></svg>
+            <span>Down right now, will start working again at 2pm (There will be no further problems, the other days work except today for now)</span>
         </div>
         <div class="controls-card">
             <div class="top-row">
