@@ -630,16 +630,20 @@ input[type="date"]:focus { outline: none; }
         right: auto;
     }
     
+    /* REVERTED TO FLEXBOX TO FIX THE DATE PICKER SHRINKING IN TEACHER MODE */
     .top-row { 
-        display: grid; 
-        grid-template-columns: 42px 1fr; 
+        display: flex;
+        flex-wrap: wrap; 
         gap: 8px; 
     }
     .menu-wrapper { 
-        grid-column: 1 / -1; 
+        flex: 1 1 100%;
         width: 100%; 
+        order: 1;
     }
     #setDefaultBtn { 
+        order: 2;
+        flex: 0 0 42px;
         width: 42px; 
         height: 42px; 
         margin: 0; 
@@ -652,8 +656,10 @@ input[type="date"]:focus { outline: none; }
     }
 
     .date-controls { 
+        order: 3;
+        flex: 1;
         width: 100%;
-        box-sizing: border-box; /* THIS FIXES THE LENGTH BUG */
+        box-sizing: border-box; 
         padding: 4px; 
         height: 42px; 
         justify-content: space-between; 
