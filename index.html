@@ -8,23 +8,43 @@
     <link rel="icon" href="data:image/svg+xml,<svg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 100 100%22><text y=%22.9em%22 font-size=%2290%22>🗓️</text></svg>">
 
     <link rel="stylesheet" href="style.css">
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Barlow+Condensed:wght@400;700;800&family=Quicksand:wght@400;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet">
 </head>
 <body>
 
     <div class="app-container">
         <header>
             <div class="header-inner">
-                <button id="viewModeBtn" class="header-mode-btn">Click here for Teachers Schedule 👨‍🏫</button>
+                <button id="viewModeBtn" class="header-mode-btn">
+                    <span>Click here</span>
+                    <span>for Teachers Schedule 👨‍🏫</span>
+                </button>
                 
                 <div class="logo-area">
                     <h1>SICSR <span class="highlight">Timetable</span></h1>
                 </div>
                 
-                <button id="themeToggleBtn" class="header-icon-btn" title="Toggle Dark Mode">🌙</button>
+                <div class="theme-picker-wrapper">
+                    <button id="themePickerBtn" class="header-icon-btn" title="Change Theme">Theme ▾</button>
+                    <div id="themeDropdown" class="theme-dropdown">
+                        <div class="theme-option" data-theme="dark"> Dark</div>
+                        <div class="theme-option" data-theme="light"> Light</div>
+                        <div class="theme-option" data-theme="pink"> Pink</div>
+                        <div class="theme-option" data-theme="yellow"> Cyber</div>
+                        <div class="theme-option" data-theme="antihero"> Anti Hero</div>
+                        <div class="theme-option" data-theme="bluedolphin"> Blue Dolphin</div>
+                        <div class="theme-option" data-theme="desertoasis"> Desert Oasis</div>
+                        <div class="theme-option" data-theme="matrix"> Matrix</div>
+                        <div class="theme-option" data-theme="passionfruit"> Passion Fruit</div>
+                        <div class="theme-option" data-theme="tiramisu"> Tiramisu</div>
+                    </div>
+                </div>
             </div>
         </header>
 
+        <div class="update-banner">
+             <span><b>New Update:</b> New themes available !</span>
+        </div>
         <div class="controls-card">
             <div class="top-row">
                 <div class="menu-wrapper">
