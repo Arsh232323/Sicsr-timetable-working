@@ -630,10 +630,35 @@ input[type="date"]:focus { outline: none; }
         right: auto;
     }
     
-    .top-row { flex-direction: row; flex-wrap: wrap; gap: 8px; }
-    .menu-wrapper { flex: 100%; width: 100%; order: 1; }
-    #setDefaultBtn { order: 2; flex: 0 0 36px; }
-    .date-controls { order: 3; flex: 1; padding: 4px; height: 36px; justify-content: space-between; }
+    .top-row { 
+        display: grid; 
+        grid-template-columns: 42px 1fr; 
+        gap: 8px; 
+    }
+    .menu-wrapper { 
+        grid-column: 1 / -1; 
+        width: 100%; 
+    }
+    #setDefaultBtn { 
+        width: 42px; 
+        height: 42px; 
+        margin: 0; 
+        box-sizing: border-box;
+    }
+    /* FIX FOR STICKY HOVER ON MOBILE */
+    #setDefaultBtn:not(.active) {
+        background: transparent;
+        opacity: 0.6;
+    }
+
+    .date-controls { 
+        width: 100%;
+        box-sizing: border-box; /* THIS FIXES THE LENGTH BUG */
+        padding: 4px; 
+        height: 42px; 
+        justify-content: space-between; 
+        min-width: 0;
+    }
     .icon-btn { padding: 0 12px; font-size: 1.5rem; }
     input[type="date"] { font-size: 0.9rem; }
     
