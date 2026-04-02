@@ -25,27 +25,29 @@
                     
                 </div>
                 
-                <div class="theme-picker-wrapper">
-                    <button id="themePickerBtn" class="header-icon-btn" title="Change Theme">Theme ▾</button>
-                    <div id="themeDropdown" class="theme-dropdown">
-                        <div class="theme-option" data-theme="dark"> Dark</div>
-                        <div class="theme-option" data-theme="light"> Light</div>
-                        <div class="theme-option" data-theme="pink"> Pink</div>
-                        <div class="theme-option" data-theme="yellow"> Cyber</div>
-                        <div class="theme-option" data-theme="antihero"> Anti Hero</div>
-                        <div class="theme-option" data-theme="bluedolphin"> Blue Dolphin</div>
-                        <div class="theme-option" data-theme="desertoasis"> Desert Oasis</div>
-                        <div class="theme-option" data-theme="matrix"> Matrix</div>
-                        <div class="theme-option" data-theme="passionfruit"> Passion Fruit</div>
-                        <div class="theme-option" data-theme="tiramisu"> Tiramisu</div>
+                <div class="header-right">
+                    <button id="loginBtn" class="header-login-btn">Sign In</button>
+                    <div class="theme-picker-wrapper">
+                        <button id="themePickerBtn" class="header-icon-btn" title="Change Theme">Theme ▾</button>
+                        <div id="themeDropdown" class="theme-dropdown">
+                            <div class="theme-option" data-theme="dark"> Dark</div>
+                            <div class="theme-option" data-theme="light"> Light</div>
+                            <div class="theme-option" data-theme="pink"> Pink</div>
+                            <div class="theme-option" data-theme="yellow"> Cyber</div>
+                            <div class="theme-option" data-theme="antihero"> Anti Hero</div>
+                            <div class="theme-option" data-theme="bluedolphin"> Blue Dolphin</div>
+                            <div class="theme-option" data-theme="desertoasis"> Desert Oasis</div>
+                            <div class="theme-option" data-theme="matrix"> Matrix</div>
+                            <div class="theme-option" data-theme="passionfruit"> Passion Fruit</div>
+                            <div class="theme-option" data-theme="tiramisu"> Tiramisu</div>
+                        </div>
                     </div>
                 </div>
             </div>
         </header>
 
-        <div class="update-banner">
-             <span><b>New Update:</b> New themes available !</span>
-        </div>
+        <div id="updateBanner" class="update-banner"></div>
+        
         <div class="controls-card">
             <div class="top-row">
                 <div class="menu-wrapper">
@@ -98,6 +100,17 @@
     </div>
 
     <div id="toastBox" class="toast-box"></div>
+
+    <div id="usernameModal" class="modal-overlay hidden">
+        <div class="modal-card">
+            
+            <h2 class="modal-title">Welcome! 👋</h2>
+            <p class="modal-sub">Pick a username to save your preferences</p>
+            <input type="text" id="usernameInput" class="modal-input" placeholder="e.g. john_doe" maxlength="20" autocomplete="off">
+            <div id="usernameError" class="username-error hidden">Please enter a valid username (3–20 chars, letters/numbers/underscore only).</div>
+            <button id="saveUsernameBtn" class="modal-save-btn">Save &amp; Continue →</button>
+        </div>
+    </div>
 
     <script type="module" src="script.js"></script>
 </body>

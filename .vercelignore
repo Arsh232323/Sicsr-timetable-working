@@ -1,3 +1,6 @@
+# Keep these off the live site
+scraper.py
+reset_teacher.py
+weekly_scraper.py
 serviceAccountKey.json
-admin-update.js
-node_modules
+.github
