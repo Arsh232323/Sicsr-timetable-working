@@ -891,26 +891,17 @@ function setupUpdateBanner() {
     if (!banner) return;
 
     banner.classList.remove('hidden');
+    
+    // We completely removed the <button> and the <div id="bannerDetails"> here
     banner.innerHTML = `
-        <div class="banner-header">
-            <div class="banner-text">
-
-                <span><b>THE TIMETABLE IS UNDER MAINTENANCE</span>
+        <div class="banner-header" style="justify-content: center; text-align: center;">
+            <div class="banner-text" style="width: 100%;">
+                <span style="color: #ff4444; font-size: 1.1rem;"><b>THE SITE IS UNDER MAINTENANCE WILL RESUME SOON</b></span>
             </div>
-            <button id="showMoreBtn" class="show-more-btn">Show More</button>
-        </div>
-        <div id="bannerDetails" class="banner-details">
-            Tap any class card to view its live status. If a class is shifted or cancelled, you can report it to warn others.
-            <br><br>
-            <i style="color:var(--primary)">⚠️ You must be logged in to submit a report.</i>
         </div>
     `;
-
-    document.getElementById('showMoreBtn').addEventListener('click', (e) => {
-        const details = document.getElementById('bannerDetails');
-        details.classList.toggle('expanded');
-        e.target.textContent = details.classList.contains('expanded') ? 'Show Less' : 'Show More';
-    });
+    
+    // The event listener for the button has also been deleted so your script doesn't crash!
 }
 
 // Undo Report Function with Error Handling
