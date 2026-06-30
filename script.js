@@ -895,7 +895,7 @@ function setupUpdateBanner() {
         <div class="banner-header">
             <div class="banner-text">
 
-                <span><b>Update 1.2: Live Class Updates!</b> See room changes & cancellations.</span>
+                <span><b>THE TIMETABLE IS UNDER MAINTENANCE</span>
             </div>
             <button id="showMoreBtn" class="show-more-btn">Show More</button>
         </div>
