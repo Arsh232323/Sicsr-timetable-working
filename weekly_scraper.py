@@ -108,10 +108,27 @@ def update_meta_lists(batch_name, teacher_name):
             "list": firestore.ArrayUnion([batch_name])
         }, merge=True)
     
+    # OLD CODE (The Problem):
+    # if teacher_name:
+    #     db.collection("meta").document("teachers").set({
+    #         "list": firestore.ArrayUnion([teacher_name])
+    #     }, merge=True)
+
+    # NEW CODE (The Fix):
     if teacher_name:
-        db.collection("meta").document("teachers").set({
-            "list": firestore.ArrayUnion([teacher_name])
-        }, merge=True)
+        # We fetch the current map, update it, and set it back
+        doc_ref = db.collection("meta").document("teachers")
+        doc = doc_ref.get()
+        data = doc.to_dict() if doc.exists else {}
+        
+        teacher_map = data.get("map", {})
+        
+        # Simple ID normalization (must match your JS logic)
+        teacher_id = re.sub(r'[^a-z]', '', re.sub(r'^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.|Ar\.|Er\.)', '', teacher_name, flags=re.IGNORECASE)).lower()
+        
+        if teacher_id and teacher_id not in teacher_map:
+            teacher_map[teacher_id] = teacher_name
+            doc_ref.set({"map": teacher_map}, merge=True)
 
 def delete_old_entries_for_date(target_date_str):
     print(f"🧹 Cleaning up old entries for {target_date_str}...")
