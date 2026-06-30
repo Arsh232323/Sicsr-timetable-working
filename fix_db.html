@@ -1,0 +1,100 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Database Recovery</title>
+    <style>
+        body { font-family: sans-serif; padding: 40px; text-align: center; }
+        button { padding: 15px 30px; font-size: 18px; cursor: pointer; background: #007bff; color: white; border: none; border-radius: 5px; }
+        #log { margin-top: 20px; font-weight: bold; color: #333; }
+    </style>
+</head>
+<body>
+    <h2>Teacher Dictionary Recovery</h2>
+    <p>This will scan your timetables and rebuild the smart teacher map.</p>
+    <button id="startBtn">Start Recovery</button>
+    <div id="log">Waiting...</div>
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
+        import { getFirestore, collection, getDocs, doc, setDoc } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyA_Zvqlc_t9wUW1PWUImjaJ7rtThP6OsYw",
+            authDomain: "symbi-timetable.firebaseapp.com",
+            projectId: "symbi-timetable"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        const log = document.getElementById('log');
+
+        function normalizeTeacherName(rawName) {
+            if (!rawName) return "";
+            let clean = rawName.replace(/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.|Ar\.|Er\.)/ig, '');
+            return clean.replace(/[^a-z]/ig, '').toLowerCase();
+        }
+
+        function getSimilarity(s1, s2) {
+            let longer = s1, shorter = s2;
+            if (s1.length < s2.length) { longer = s2; shorter = s1; }
+            let longerLen = longer.length;
+            if (longerLen === 0) return 1.0;
+            let costs = new Array();
+            for (let i = 0; i <= longerLen; i++) {
+                let lastValue = i;
+                for (let j = 0; j <= shorter.length; j++) {
+                    if (i === 0) costs[j] = j;
+                    else if (j > 0) {
+                        let newValue = costs[j - 1];
+                        if (longer.charAt(i - 1) !== shorter.charAt(j - 1)) {
+                            newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                        }
+                        costs[j - 1] = lastValue;
+                        lastValue = newValue;
+                    }
+                }
+                if (i > 0) costs[shorter.length] = lastValue;
+            }
+            return (longerLen - costs[shorter.length]) / parseFloat(longerLen);
+        }
+
+        document.getElementById('startBtn').addEventListener('click', async () => {
+            log.textContent = "Scanning database... please wait.";
+            try {
+                const snapshot = await getDocs(collection(db, "timetables"));
+                let tempMap = {};
+                let count = 0;
+
+                snapshot.forEach(docSnap => {
+                    const data = docSnap.data();
+                    const rawName = data.teacher_raw || data.teacher || data.teacher_display; 
+                    
+                    if (rawName && typeof rawName === 'string' && rawName.trim().length > 0) {
+                        let normalizedId = normalizeTeacherName(rawName);
+                        if (!tempMap[normalizedId]) {
+                            let isFuzzyMatch = false;
+                            for (const existingId in tempMap) {
+                                if (getSimilarity(normalizedId, existingId) >= 0.85) {
+                                    isFuzzyMatch = true;
+                                    break;
+                                }
+                            }
+                            if (!isFuzzyMatch) {
+                                tempMap[normalizedId] = rawName.trim();
+                                count++;
+                            }
+                        }
+                    }
+                });
+
+                log.textContent = `Found ${count} unique teachers. Saving to Firebase...`;
+                await setDoc(doc(db, "meta", "teachers"), { map: tempMap }, { merge: true });
+                log.textContent = `✅ Success! Database rebuilt with ${count} teachers. You can close this file now.`;
+                
+            } catch (error) {
+                log.textContent = "❌ Error: " + error.message;
+            }
+        });
+    </script>
+</body>
+</html>
