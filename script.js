@@ -1,6 +1,5 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc as firestoreDoc, getDoc, collection, query, where, getDocs, orderBy, setDoc, deleteDoc, arrayUnion, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-// FIX: Swapped signInWithPopup to signInWithRedirect here
 import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // --- 1. FIREBASE CONFIG ---
@@ -87,7 +86,7 @@ const BASE_URL = "http://time-table.sicsr.ac.in";
 // --- 4. STATE ---
 let viewMode = 'STUDENT';
 let courseTree = {};
-let teacherList = [];
+let teacherData = {}; // Now an object mapping IDs to Display Names
 let selection = { course: null, semester: null, division: null, teacher: null };
 let currentStep = 'COURSE';
 let currentUser = null;
@@ -108,7 +107,7 @@ async function init() {
 
         const teacherDoc = await getDoc(firestoreDoc(db, "meta", "teachers"));
         if (teacherDoc.exists()) {
-            teacherList = (teacherDoc.data().list || []);
+            teacherData = (teacherDoc.data().map || {}); // Uses map instead of list array
         }
 
         const defaultBatch = localStorage.getItem('sicsr_default_batch');
@@ -149,6 +148,40 @@ function restoreSelection(rawBatch) {
 }
 
 // --- 6. PARSERS ---
+
+// HELPER: Aggressively cleans text to create a standardized ID
+function normalizeTeacherName(rawName) {
+    if (!rawName) return "";
+    let clean = rawName.replace(/^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.|Ar\.|Er\.)/ig, '');
+    return clean.replace(/[^a-z]/ig, '').toLowerCase();
+}
+
+// HELPER: Calculates percentage match between two strings (Levenshtein)
+function getSimilarity(s1, s2) {
+    let longer = s1, shorter = s2;
+    if (s1.length < s2.length) { longer = s2; shorter = s1; }
+    let longerLen = longer.length;
+    if (longerLen === 0) return 1.0;
+    
+    let costs = new Array();
+    for (let i = 0; i <= longerLen; i++) {
+        let lastValue = i;
+        for (let j = 0; j <= shorter.length; j++) {
+            if (i === 0) costs[j] = j;
+            else if (j > 0) {
+                let newValue = costs[j - 1];
+                if (longer.charAt(i - 1) !== shorter.charAt(j - 1)) {
+                    newValue = Math.min(Math.min(newValue, lastValue), costs[j]) + 1;
+                }
+                costs[j - 1] = lastValue;
+                lastValue = newValue;
+            }
+        }
+        if (i > 0) costs[shorter.length] = lastValue;
+    }
+    return (longerLen - costs[shorter.length]) / parseFloat(longerLen);
+}
+
 function parseCourses(rawList) {
     courseTree = {};
     rawList.forEach(item => {
@@ -234,11 +267,14 @@ function renderMenu() {
     if (viewMode === 'TEACHER') {
         menuHeader.classList.add('hidden');
 
-        let displayList = [...teacherList];
-        const searchTerm = teacherSearch.value.toLowerCase().trim();
+        // Convert mapping object into array of { id, name }
+        let displayList = Object.keys(teacherData).map(id => {
+            return { id: id, name: teacherData[id] };
+        });
 
+        const searchTerm = teacherSearch.value.toLowerCase().trim();
         if (searchTerm) {
-            displayList = displayList.filter(t => t.toLowerCase().includes(searchTerm));
+            displayList = displayList.filter(t => t.name.toLowerCase().includes(searchTerm));
         }
 
         if (displayList.length === 0) {
@@ -246,17 +282,18 @@ function renderMenu() {
             return;
         }
 
+        // Sort alphabetically by Master Display Name
         displayList.sort((a, b) => {
-            const cleanA = a.replace(/^(Dr\.|Mr\.|Mrs\.|Ms\.|Prof\.|Ar\.|Er\.)\s*/i, '').trim();
-            const cleanB = b.replace(/^(Dr\.|Mr\.|Mrs\.|Ms\.|Prof\.|Ar\.|Er\.)\s*/i, '').trim();
+            const cleanA = a.name.replace(/^(Dr\.|Mr\.|Mrs\.|Ms\.|Prof\.|Ar\.|Er\.)\s*/i, '').trim();
+            const cleanB = b.name.replace(/^(Dr\.|Mr\.|Mrs\.|Ms\.|Prof\.|Ar\.|Er\.)\s*/i, '').trim();
             return cleanA.localeCompare(cleanB);
         });
 
         displayList.forEach((teacher, index) => {
-            const label = `${index + 1}. ${teacher}`;
+            const label = `${index + 1}. ${teacher.name}`;
             addOption(label, () => {
-                selection.teacher = teacher;
-                menuLabel.textContent = teacher;
+                selection.teacher = teacher.id; // Save ID for queries
+                menuLabel.textContent = teacher.name;
                 finishMenuSelection();
                 loadTimetable();
             }, false);
@@ -311,7 +348,8 @@ function addOption(text, onClick, hasArrow) {
 
 function updateHeaderLabel() {
     if (viewMode === 'TEACHER') {
-        menuLabel.textContent = selection.teacher || "Select Teacher...";
+        // If teacher is selected, show their proper name from the map, otherwise default text
+        menuLabel.textContent = (selection.teacher && teacherData[selection.teacher]) ? teacherData[selection.teacher] : "Select Teacher...";
         return;
     }
     if (selection.course && selection.semester && selection.division) {
@@ -488,7 +526,8 @@ function renderCards(snap, dailyReports = []) {
     classes.forEach(data => {
         const parsed = parseDescription(data.description, data.batch);
         let subject = parsed.subject;
-        let teacher = parsed.teacher;
+        // Use smart matching display name if available
+        let teacher = data.teacher_display || parsed.teacher;
 
         let roomRaw = data.room || "";
         let roomNum = roomRaw.replace(/SICSR\s*-\s*/gi, "").trim();
@@ -530,20 +569,14 @@ function renderCards(snap, dailyReports = []) {
         let drawerStatus = '🟢 No active reports';
 
         if (classReports.length > 0) {
-
-            // --- SCENARIO 1: CONFLICT (Mixed reports OR multiple different rooms) ---
+            // --- SCENARIO 1: CONFLICT ---
             if (isAnyConflict) {
-                cardClass = 'card shifted-card'; // Use shifted style but with warning banner
+                cardClass = 'card shifted-card';
                 drawerStatus = `🟠 Conflicting Reports`;
 
-                // Build a master list showing exactly who reported what
                 let listItems = '';
-                cancelReports.forEach(r => {
-                    listItems += `<li>🚨 <b>${r.username}</b> said Cancelled</li>`;
-                });
-                roomReports.forEach(r => {
-                    listItems += `<li>📍 <b>${r.username}</b> said Room <b>${r.newRoom}</b></li>`;
-                });
+                cancelReports.forEach(r => { listItems += `<li>🚨 <b>${r.username}</b> said Cancelled</li>`; });
+                roomReports.forEach(r => { listItems += `<li>📍 <b>${r.username}</b> said Room <b>${r.newRoom}</b></li>`; });
 
                 let reporterText = `
                     <span class="reporters-toggle" onclick="event.stopPropagation(); const list = this.nextElementSibling; list.style.display = list.style.display === 'none' ? 'block' : 'none';">(See ${classReports.length} conflicting reports ▾)</span>
@@ -687,18 +720,51 @@ async function scrapeDayClientSide(dateStr) {
                 const desc = getVal("Description:") || "";
                 const parsed = parseDescription(desc, batch);
 
+                let finalTeacherId = "";
+                let finalTeacherName = parsed.teacher;
+
+                if (parsed.teacher) {
+                    let normalizedId = normalizeTeacherName(parsed.teacher);
+                    finalTeacherId = normalizedId;
+                    
+                    // Check if we already have this exact ID
+                    if (!teacherData[normalizedId]) {
+                        let foundFuzzyMatch = false;
+                        
+                        // Check for an 85% fuzzy match against existing IDs
+                        for (const existingId in teacherData) {
+                            if (getSimilarity(normalizedId, existingId) >= 0.85) {
+                                finalTeacherId = existingId;
+                                finalTeacherName = teacherData[existingId]; // Inherit Master Name
+                                foundFuzzyMatch = true;
+                                break;
+                            }
+                        }
+
+                        // If no match at all, this is a brand new teacher! Add them to the map.
+                        if (!foundFuzzyMatch) {
+                            teacherData[finalTeacherId] = parsed.teacher;
+                            // Update the master dictionary in Firebase
+                            await setDoc(firestoreDoc(db, "meta", "teachers"), { map: teacherData }, { merge: true });
+                        }
+                    } else {
+                        finalTeacherName = teacherData[normalizedId]; // Use existing Master Name
+                    }
+                }
+
                 await setDoc(firestoreDoc(db, "timetables", id), {
                     id: id, date: dateStr, batch: batch,
-                    description: desc, subject_clean: parsed.subject, teacher_clean: parsed.teacher,
+                    description: desc, subject_clean: parsed.subject, 
+                    teacher_raw: parsed.teacher, // Keep original just in case
+                    teacher_clean: finalTeacherId, // Query against standardized ID
+                    teacher_display: finalTeacherName, // Show this on the card
                     room: getVal("Room:"),
                     start_time: (getVal("Start time:") || "").substring(0, 5),
                     end_time: (getVal("End time:") || "").substring(0, 5)
                 }, { merge: true });
 
                 await setDoc(firestoreDoc(db, "meta", "courses"), { list: arrayUnion(batch) }, { merge: true });
-                if (parsed.teacher) {
-                    await setDoc(firestoreDoc(db, "meta", "teachers"), { list: arrayUnion(parsed.teacher) }, { merge: true });
-                }
+                
                 savedCount++;
             } catch(e) {}
         });
@@ -892,7 +958,6 @@ function setupUpdateBanner() {
 
     banner.classList.remove('hidden');
     
-    // We completely removed the <button> and the <div id="bannerDetails"> here
     banner.innerHTML = `
         <div class="banner-header" style="justify-content: center; text-align: center;">
             <div class="banner-text" style="width: 100%;">
@@ -900,8 +965,6 @@ function setupUpdateBanner() {
             </div>
         </div>
     `;
-    
-    // The event listener for the button has also been deleted so your script doesn't crash!
 }
 
 // Undo Report Function with Error Handling
@@ -1016,7 +1079,7 @@ loginBtn.addEventListener('click', async () => {
         showToast('👋 Signed out');
     } else {
         try {
-            // FIX: Uses signInWithRedirect to bypass mobile popup blockers
+            // Uses signInWithRedirect to bypass mobile popup blockers
             await signInWithRedirect(auth, googleProvider);
         } catch (err) {
             showToast('❌ Sign-in failed: ' + err.message);
