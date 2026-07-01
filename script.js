@@ -684,17 +684,6 @@ function renderCards(snap, dailyReports = []) {
     });
 }
 
-// --- 9. CLIENT SCRAPER ---
-async function fetchWithProxy(targetUrl) {
-    for (const proxy of PROXIES) {
-        try {
-            const res = await fetch(proxy.url + encodeURIComponent(targetUrl));
-            if (res.ok) return proxy.type === "json" ? (await res.json()).contents : await res.text();
-        } catch (e) { }
-    }
-    throw new Error("Proxies busy");
-}
-
 async function scrapeDayClientSide(dateStr) {
     try {
         const [y, m, d] = dateStr.split('-');
@@ -744,7 +733,7 @@ async function scrapeDayClientSide(dateStr) {
                         // If no match at all, this is a brand new teacher! Add them to the map.
                         if (!foundFuzzyMatch) {
                             teacherData[finalTeacherId] = parsed.teacher;
-                            // Update the master dictionary in Firebase
+                            // Update the master dictionary in Firebase using the map
                             await setDoc(firestoreDoc(db, "meta", "teachers"), { map: teacherData }, { merge: true });
                         }
                     } else {
@@ -763,6 +752,7 @@ async function scrapeDayClientSide(dateStr) {
                     end_time: (getVal("End time:") || "").substring(0, 5)
                 }, { merge: true });
 
+                // Update courses list (this is the only arrayUnion that should be here!)
                 await setDoc(firestoreDoc(db, "meta", "courses"), { list: arrayUnion(batch) }, { merge: true });
                 
                 savedCount++;
@@ -950,7 +940,6 @@ document.addEventListener('click', (e) => {
     if (!menuTrigger.contains(e.target) && !dropdownList.contains(e.target)) dropdownList.classList.remove('show');
     if (!themePickerBtn.contains(e.target) && !themeDropdown.contains(e.target)) themeDropdown.classList.remove('show');
 });
-
 // --- UPDATE BANNER & REPORTING LOGIC ---
 function setupUpdateBanner() {
     const banner = document.getElementById('updateBanner');
@@ -958,13 +947,47 @@ function setupUpdateBanner() {
 
     banner.classList.remove('hidden');
     
+    // Inject the slim banner and the hidden modal directly into the page
     banner.innerHTML = `
-        <div class="banner-header" style="justify-content: center; text-align: center;">
-            <div class="banner-text" style="width: 100%;">
-                <span style="color: #ff4444; font-size: 1.1rem;"><b>THE SITE IS UNDER MAINTENANCE WILL RESUME SOON</b></span>
+        <div id="info-banner" style="background-color: #e0f2fe; color: #0369a1; text-align: center; padding: 10px 15px; font-size: 14px; cursor: pointer; display: flex; justify-content: center; align-items: center; border-radius: 6px; margin-bottom: 15px; border: 1px solid #bae6fd;">
+            <span>ℹ️ <strong>How it works:</strong> Click here to read important info about accuracy, updates, and reporting.</span>
+        </div>
+
+        <div id="info-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.6); z-index: 9999; justify-content: center; align-items: center;">
+            <div style="background-color: #ffffff; padding: 25px 30px; border-radius: 8px; max-width: 500px; width: 90%; position: relative; box-shadow: 0 4px 15px rgba(0,0,0,0.2); text-align: left;">
+                <span id="close-modal" style="position: absolute; top: 15px; right: 20px; font-size: 24px; font-weight: bold; color: #888; cursor: pointer;">&times;</span>
+                <h2 style="margin-top: 0; font-size: 20px; color: #333; border-bottom: 1px solid #eee; padding-bottom: 10px;">How This Timetable Works</h2>
+                <ol style="padding-left: 20px; color: #444; line-height: 1.6; font-size: 14px;">
+                    <li style="margin-bottom: 12px;"><strong>Accuracy:</strong> This timetable is a direct mirror of the official college portal. If the official portal is wrong, this site will also be wrong.</li>
+                    <li style="margin-bottom: 12px;"><strong>Update Schedule:</strong> The database syncs every day around <strong>1:00 AM</strong>. If a same-day class is scheduled or changed <em>after</em> 1 AM, it will likely not reflect here.</li>
+                    <li style="margin-bottom: 12px;"><strong>Email Notifications:</strong> If you get an email from a teacher about a class, but it has not been added to the official college portal before 1 AM, it will not show up here.</li>
+                    <li style="margin-bottom: 12px;"><strong>Community Reporting:</strong> If a class is shifted or cancelled, you can sign in and report it to help others. <br><span style="color: #dc2626; font-weight: bold; font-size: 13px;">⚠️ Warning: False reporting will result in a permanent account ban.</span></li>
+                </ol>
             </div>
         </div>
     `;
+
+    // Add logic to open and close the modal
+    const infoBanner = document.getElementById("info-banner");
+    const infoModal = document.getElementById("info-modal");
+    const closeModal = document.getElementById("close-modal");
+
+    // Open modal on banner click
+    infoBanner.addEventListener("click", () => {
+        infoModal.style.display = "flex";
+    });
+
+    // Close modal on 'X' click
+    closeModal.addEventListener("click", () => {
+        infoModal.style.display = "none";
+    });
+
+    // Close modal if user clicks outside the white box
+    window.addEventListener("click", (event) => {
+        if (event.target === infoModal) {
+            infoModal.style.display = "none";
+        }
+    });
 }
 
 // Undo Report Function with Error Handling
