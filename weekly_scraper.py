@@ -65,9 +65,12 @@ def parse_description(desc, batch_name):
     Parses description to separate Subject and Teacher.
     Aggressively strips metadata prefixes like 'BBA Sem IV - Div A - ...'
     """
-    if not desc: return "Subject Not Listed", ""
+    if not desc: return "Subject Not Listed", "", ""
     
     d = desc.replace('&amp;', '&').strip()
+    
+    # Normalize weird dashes (en-dash, em-dash) to standard hyphens
+    d = re.sub(r'[–—−]', '-', d)
     
     # Deep Clean Loop
     previous_d = ""
@@ -82,40 +85,45 @@ def parse_description(desc, batch_name):
     parts = [p.strip() for p in parts if p.strip()]
 
     final_subject = ""
-    final_teacher = ""
+    final_teacher_name = ""
+    final_teacher_id = ""
 
     def is_teacher(text):
-        return bool(re.match(r'^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.|Ar\.|Er\.)', text, re.IGNORECASE))
+        # Checks if it STARTS with a title OR ENDS with Sir/Ma'am
+        return bool(re.search(r'^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.|Ar\.|Er\.)|\b(Sir|Ma\'?am|Mam)\b$', text, re.IGNORECASE))
 
     if parts and is_teacher(parts[-1]):
         final_teacher = parts.pop()
+        
+        # Clean "Sir" or "Ma'am" out of the final name so it doesn't look messy
+        final_teacher = re.sub(r'\b(Sir|Ma\'?am|Mam)\b$', '', final_teacher, flags=re.IGNORECASE).strip()
+        
         clean_name = final_teacher.strip().replace('\u00A0', ' ')
         if clean_name in TEACHER_CORRECTIONS:
-            final_teacher = TEACHER_CORRECTIONS[clean_name]
+            final_teacher_name = TEACHER_CORRECTIONS[clean_name]
+        else:
+            final_teacher_name = clean_name
+            
+        # Create the ID right here (lowercase, no spaces, no titles)
+        final_teacher_id = re.sub(r'[^a-z]', '', re.sub(r'^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.|Ar\.|Er\.)', '', final_teacher_name, flags=re.IGNORECASE)).lower()
+
 
     if parts:
         final_subject = ' - '.join(parts)
-    elif final_teacher:
+    elif final_teacher_name:
         final_subject = "Class / Session"
     else:
         final_subject = re.sub(r'^[-:\s]+', '', desc.replace(batch_name or "", "")) or "Subject Not Listed"
         
-    return final_subject.strip().rstrip('-').strip(), final_teacher
+    return final_subject.strip().rstrip('-').strip(), final_teacher_name, final_teacher_id
 
-def update_meta_lists(batch_name, teacher_name):
+def update_meta_lists(batch_name, teacher_name, teacher_id):
     if batch_name:
         db.collection("meta").document("courses").set({
             "list": firestore.ArrayUnion([batch_name])
         }, merge=True)
     
-    # OLD CODE (The Problem):
-    # if teacher_name:
-    #     db.collection("meta").document("teachers").set({
-    #         "list": firestore.ArrayUnion([teacher_name])
-    #     }, merge=True)
-
-    # NEW CODE (The Fix):
-    if teacher_name:
+    if teacher_name and teacher_id:
         # We fetch the current map, update it, and set it back
         doc_ref = db.collection("meta").document("teachers")
         doc = doc_ref.get()
@@ -123,10 +131,7 @@ def update_meta_lists(batch_name, teacher_name):
         
         teacher_map = data.get("map", {})
         
-        # Simple ID normalization (must match your JS logic)
-        teacher_id = re.sub(r'[^a-z]', '', re.sub(r'^(Dr\.|Prof\.|Mr\.|Ms\.|Mrs\.|Ar\.|Er\.)', '', teacher_name, flags=re.IGNORECASE)).lower()
-        
-        if teacher_id and teacher_id not in teacher_map:
+        if teacher_id not in teacher_map:
             teacher_map[teacher_id] = teacher_name
             doc_ref.set({"map": teacher_map}, merge=True)
 
@@ -166,8 +171,9 @@ def scrape_entry(entry_id, target_date):
         start_time = get_val("Start time:")[:5]
         end_time = get_val("End time:")[:5]
 
-        subject_clean, teacher_clean = parse_description(description, batch)
-        update_meta_lists(batch, teacher_clean)
+        # Unpack the 3 variables returned by our updated parse_description
+        subject_clean, teacher_name, teacher_id = parse_description(description, batch)
+        update_meta_lists(batch, teacher_name, teacher_id)
 
         data = {
             "id": entry_id,
@@ -175,14 +181,14 @@ def scrape_entry(entry_id, target_date):
             "batch": batch,
             "description": description,
             "subject_clean": subject_clean,
-            "teacher_clean": teacher_clean,
+            "teacher_clean": teacher_id,  # This now perfectly matches the dropdown ID
             "room": room,
             "start_time": start_time,
             "end_time": end_time
         }
         
         db.collection("timetables").document(entry_id).set(data, merge=True)
-        print(f"   ✅ Saved: {subject_clean} | Teacher: {teacher_clean or 'N/A'}")
+        print(f"   ✅ Saved: {subject_clean} | Teacher: {teacher_name or 'N/A'}")
 
     except Exception as e:
         print(f"   ❌ Error scraping ID {entry_id}: {e}")
