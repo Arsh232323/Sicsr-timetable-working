@@ -947,18 +947,18 @@ function setupUpdateBanner() {
 
     banner.classList.remove('hidden');
     
-    // Inject an inline expandable accordion (No popups, theme-friendly, italicized text)
+    // Ultra-slim inline accordion without the emoji
     banner.innerHTML = `
-        <div style="margin-bottom: 15px; border: 1px solid rgba(150,150,150,0.3); border-radius: 8px; overflow: hidden;">
-            <div id="info-banner" style="background: rgba(128, 128, 128, 0.1); padding: 12px 15px; font-size: 14px; cursor: pointer; text-align: center; font-style: italic; display: flex; justify-content: center; align-items: center; transition: background 0.2s;">
-                <span id="info-banner-text">ℹ️ <strong>How it works:</strong> Click here to read important info about accuracy, updates, and reporting ▾</span>
+        <div style="margin-bottom: 10px; border: 1px solid rgba(150,150,150,0.3); border-radius: 6px; overflow: hidden;">
+            <div id="info-banner" style="background: rgba(128, 128, 128, 0.1); padding: 6px 10px; font-size: 13px; cursor: pointer; text-align: center; font-style: italic; display: flex; justify-content: center; align-items: center; transition: background 0.2s;">
+                <span id="info-banner-text"><strong>How it works:</strong> Click here to read important info about accuracy, updates, and reporting ▾</span>
             </div>
 
-            <div id="info-content" style="display: none; padding: 15px 20px; font-size: 13.5px; line-height: 1.6; background: rgba(128, 128, 128, 0.05); border-top: 1px solid rgba(150,150,150,0.3); text-align: left;">
+            <div id="info-content" style="display: none; padding: 12px 15px; font-size: 13px; line-height: 1.5; background: rgba(128, 128, 128, 0.05); border-top: 1px solid rgba(150,150,150,0.3); text-align: left;">
                 <ol style="margin: 0; padding-left: 20px; opacity: 0.9;">
-                    <li style="margin-bottom: 10px;"><strong>Accuracy:</strong> This timetable is a direct mirror of the official college portal. If the official portal is wrong, this site will also be wrong.</li>
-                    <li style="margin-bottom: 10px;"><strong>Update Schedule:</strong> The database syncs every day around <strong>1:00 AM</strong>. If a same-day class is scheduled or changed <em>after</em> 1 AM, it will likely not reflect here.</li>
-                    <li style="margin-bottom: 10px;"><strong>Email Notifications:</strong> If you get an email from a teacher about a class, but it has not been added to the official college portal before 1 AM, it will not show up here.</li>
+                    <li style="margin-bottom: 8px;"><strong>Accuracy:</strong> This timetable is a direct mirror of the official college timetable. If the official timetable is wrong, this site will also be wrong.</li>
+                    <li style="margin-bottom: 8px;"><strong>Update Schedule:</strong> The database syncs every day around <strong>1:00 AM</strong>. If a same-day class is scheduled or changed <em>after</em> 1 AM, it will likely not reflect here.</li>
+                    <li style="margin-bottom: 8px;"><strong>Email Notifications:</strong> If you get an email from a teacher about a class, but it has not been added to the official college timetable before 1 AM, it will not show up here.</li>
                     <li style="margin-bottom: 0;"><strong>Community Reporting:</strong> If a class is shifted or cancelled, you can sign in and report it to help others. <br><span style="color: #ff4444; font-style: normal;"><strong>⚠️ Warning:</strong> False reporting will result in a permanent account ban.</span></li>
                 </ol>
             </div>
@@ -974,12 +974,12 @@ function setupUpdateBanner() {
         if (infoContent.style.display === "none") {
             // Open it
             infoContent.style.display = "block";
-            bannerText.innerHTML = "ℹ️ <strong>How it works:</strong> Click to hide ▴";
+            bannerText.innerHTML = "<strong>How it works:</strong> Click to hide ▴";
             infoBanner.style.background = "rgba(128, 128, 128, 0.2)";
         } else {
             // Close it
             infoContent.style.display = "none";
-            bannerText.innerHTML = "ℹ️ <strong>How it works:</strong> Click here to read important info about accuracy, updates, and reporting ▾";
+            bannerText.innerHTML = "<strong>How it works:</strong> Click here to read important info about accuracy, updates, and reporting ▾";
             infoBanner.style.background = "rgba(128, 128, 128, 0.1)";
         }
     });
