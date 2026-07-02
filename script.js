@@ -946,41 +946,51 @@ function setupUpdateBanner() {
     if (!banner) return;
 
     banner.classList.remove('hidden');
-    
-    // Completely stripped down: Just a clickable text line, no boxes or backgrounds
-    banner.innerHTML = `
-        <div style="margin-bottom: 10px; text-align: center;">
-            <span id="info-banner" style="font-size: 12px; cursor: pointer; font-style: italic; opacity: 0.8; display: inline-block; padding: 2px 5px;">
-                <span id="info-banner-text"><strong>How it works:</strong> Accuracy, updates, & reporting ▾</span>
-            </span>
 
-            <div id="info-content" style="display: none; margin-top: 8px; padding: 12px 15px; font-size: 13px; line-height: 1.5; background: rgba(128, 128, 128, 0.05); border: 1px solid rgba(150,150,150,0.2); border-radius: 6px; text-align: left;">
-                <ol style="margin: 0; padding-left: 20px; opacity: 0.9;">
+    // 1. STRIP ANY BLOATED PARENT CSS
+    banner.style.padding = "0";
+    banner.style.backgroundColor = "transparent";
+    banner.style.border = "none";
+    banner.style.boxShadow = "none";
+
+    // 2. INJECT THE THEME-ADAPTIVE SLIM PILL
+    banner.innerHTML = `
+        <div style="margin-bottom: 12px; text-align: center;">
+            
+            <div id="info-banner" style="background-color: rgba(128, 128, 128, 0.15); border: 1px solid rgba(128, 128, 128, 0.3); color: var(--text-light, inherit); padding: 4px 14px; border-radius: 20px; display: inline-block; cursor: pointer; font-size: 12px; font-style: italic; transition: background-color 0.2s;">
+                <span id="info-banner-text">How it works: Accuracy, tips, & reporting ▾</span>
+            </div>
+
+            <div id="info-content" style="display: none; margin-top: 10px; padding: 12px 15px; font-size: 13px; line-height: 1.5; background: rgba(128, 128, 128, 0.05); border: 1px solid rgba(128, 128, 128, 0.2); border-radius: 8px; text-align: left; color: var(--text-light, inherit);">
+                <ol style="margin: 0; padding-left: 20px;">
                     <li style="margin-bottom: 8px;"><strong>Accuracy:</strong> This timetable is a direct mirror of the official college timetable. If the official timetable is wrong, this site will also be wrong.</li>
                     <li style="margin-bottom: 8px;"><strong>Update Schedule:</strong> The database syncs every day around <strong>1:00 AM</strong>. If a same-day class is scheduled or changed <em>after</em> 1 AM, it will likely not reflect here.</li>
                     <li style="margin-bottom: 8px;"><strong>Email Notifications:</strong> If you get an email from a teacher about a class, but it has not been added to the official college timetable before 1 AM, it will not show up here.</li>
+                    <li style="margin-bottom: 8px;"><strong>📌 Set a Default Class:</strong> Click the pin icon next to your selected batch. This saves it as your default, so the timetable automatically opens to your class every time you visit.</li>
+                    <li style="margin-bottom: 8px;"><strong>📱 Use it like an App:</strong> Instead of opening the link every time, save it to your phone! <br>
+                        • <strong>Android (Chrome):</strong> Tap the three dots (⋮) in the top right corner and select "Add to Home screen".<br>
+                        • <strong>iOS (Safari):</strong> Tap the Share icon at the bottom and select "Add to Home Screen".
+                    </li>
                     <li style="margin-bottom: 0;"><strong>Community Reporting:</strong> If a class is shifted or cancelled, you can sign in and report it to help others. <br><span style="color: #ff4444; font-style: normal;"><strong>⚠️ Warning:</strong> False reporting will result in a permanent account ban.</span></li>
                 </ol>
             </div>
         </div>
     `;
 
-    // Toggle Logic
+    // 3. TOGGLE LOGIC
     const infoBanner = document.getElementById("info-banner");
     const infoContent = document.getElementById("info-content");
     const bannerText = document.getElementById("info-banner-text");
 
     infoBanner.addEventListener("click", () => {
         if (infoContent.style.display === "none") {
-            // Open it
             infoContent.style.display = "block";
-            bannerText.innerHTML = "<strong>How it works:</strong> Click to hide ▴";
-            infoBanner.style.opacity = "1";
+            bannerText.innerHTML = "How it works: Click to hide ▴";
+            infoBanner.style.backgroundColor = "rgba(128, 128, 128, 0.25)";
         } else {
-            // Close it
             infoContent.style.display = "none";
-            bannerText.innerHTML = "<strong>How it works:</strong> Accuracy, updates, & reporting ▾";
-            infoBanner.style.opacity = "0.8";
+            bannerText.innerHTML = "How it works: Accuracy, tips, & reporting ▾";
+            infoBanner.style.backgroundColor = "rgba(128, 128, 128, 0.15)";
         }
     });
 }
