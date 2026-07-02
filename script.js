@@ -947,14 +947,14 @@ function setupUpdateBanner() {
 
     banner.classList.remove('hidden');
     
-    // Ultra-slim inline accordion without the emoji
+    // Completely stripped down: Just a clickable text line, no boxes or backgrounds
     banner.innerHTML = `
-        <div style="margin-bottom: 10px; border: 1px solid rgba(150,150,150,0.3); border-radius: 6px; overflow: hidden;">
-            <div id="info-banner" style="background: rgba(128, 128, 128, 0.1); padding: 6px 10px; font-size: 13px; cursor: pointer; text-align: center; font-style: italic; display: flex; justify-content: center; align-items: center; transition: background 0.2s;">
-                <span id="info-banner-text"><strong>How it works:</strong> Click here to read important info about accuracy, updates, and reporting ▾</span>
-            </div>
+        <div style="margin-bottom: 10px; text-align: center;">
+            <span id="info-banner" style="font-size: 12px; cursor: pointer; font-style: italic; opacity: 0.8; display: inline-block; padding: 2px 5px;">
+                <span id="info-banner-text"><strong>How it works:</strong> Accuracy, updates, & reporting ▾</span>
+            </span>
 
-            <div id="info-content" style="display: none; padding: 12px 15px; font-size: 13px; line-height: 1.5; background: rgba(128, 128, 128, 0.05); border-top: 1px solid rgba(150,150,150,0.3); text-align: left;">
+            <div id="info-content" style="display: none; margin-top: 8px; padding: 12px 15px; font-size: 13px; line-height: 1.5; background: rgba(128, 128, 128, 0.05); border: 1px solid rgba(150,150,150,0.2); border-radius: 6px; text-align: left;">
                 <ol style="margin: 0; padding-left: 20px; opacity: 0.9;">
                     <li style="margin-bottom: 8px;"><strong>Accuracy:</strong> This timetable is a direct mirror of the official college timetable. If the official timetable is wrong, this site will also be wrong.</li>
                     <li style="margin-bottom: 8px;"><strong>Update Schedule:</strong> The database syncs every day around <strong>1:00 AM</strong>. If a same-day class is scheduled or changed <em>after</em> 1 AM, it will likely not reflect here.</li>
@@ -965,7 +965,7 @@ function setupUpdateBanner() {
         </div>
     `;
 
-    // Toggle Logic for the Accordion
+    // Toggle Logic
     const infoBanner = document.getElementById("info-banner");
     const infoContent = document.getElementById("info-content");
     const bannerText = document.getElementById("info-banner-text");
@@ -975,12 +975,12 @@ function setupUpdateBanner() {
             // Open it
             infoContent.style.display = "block";
             bannerText.innerHTML = "<strong>How it works:</strong> Click to hide ▴";
-            infoBanner.style.background = "rgba(128, 128, 128, 0.2)";
+            infoBanner.style.opacity = "1";
         } else {
             // Close it
             infoContent.style.display = "none";
-            bannerText.innerHTML = "<strong>How it works:</strong> Click here to read important info about accuracy, updates, and reporting ▾";
-            infoBanner.style.background = "rgba(128, 128, 128, 0.1)";
+            bannerText.innerHTML = "<strong>How it works:</strong> Accuracy, updates, & reporting ▾";
+            infoBanner.style.opacity = "0.8";
         }
     });
 }
