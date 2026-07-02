@@ -1,6 +1,6 @@
 import { initializeApp } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-app.js";
 import { getFirestore, doc as firestoreDoc, getDoc, collection, query, where, getDocs, orderBy, setDoc, deleteDoc, arrayUnion, limit } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-firestore.js";
-import { getAuth, GoogleAuthProvider, signInWithRedirect, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
+import { getAuth, GoogleAuthProvider, signInWithPopup, signOut, onAuthStateChanged } from "https://www.gstatic.com/firebasejs/10.7.1/firebase-auth.js";
 
 // --- 1. FIREBASE CONFIG ---
 const firebaseConfig = {
@@ -1107,9 +1107,9 @@ loginBtn.addEventListener('click', async () => {
         showToast('👋 Signed out');
     } else {
         try {
-            // Uses signInWithRedirect to bypass mobile popup blockers
-            await signInWithRedirect(auth, googleProvider);
+            await signInWithPopup(auth, googleProvider);
         } catch (err) {
+            console.error("Popup Login Error:", err);
             showToast('❌ Sign-in failed: ' + err.message);
         }
     }
