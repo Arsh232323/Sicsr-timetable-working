@@ -1154,21 +1154,3 @@ usernameModal.addEventListener('click', (e) => {
 });
 
 init();
-// --- TYPING TEST COMPETITION BANNER LOGIC ---
-const compBanner = document.getElementById('comp-banner');
-const compContent = document.getElementById('comp-banner-content');
-const compToggleIcon = document.getElementById('comp-toggle-icon');
-
-if (compBanner && compContent && compToggleIcon) {
-    compBanner.addEventListener('click', (e) => {
-        if (e.target.tagName === 'A') return; 
-
-        if (compContent.style.display === 'none') {
-            compContent.style.display = 'block';
-            compToggleIcon.textContent = '▲';
-        } else {
-            compContent.style.display = 'none';
-            compToggleIcon.textContent = '▼';
-        }
-    });
-}
